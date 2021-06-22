@@ -1,9 +1,10 @@
-pragma solidity =0.6.6;
+pragma solidity >=0.6.6;
 
 import './UniswapV2Library.sol';
 import './interfaces/IUniswapV2Router02.sol';
 import './interfaces/IUniswapV2Pair.sol';
 import './interfaces/IERC20.sol';
+/* need to import BMath from Balancer to use some functions, how is it done? */
 // when adding the contract to mainnet how this contract access the other contract functions like BPool.sol, BMath.sol
 
 contract FlashLoaner {
@@ -32,15 +33,16 @@ contract FlashLoaner {
       path[1] = _amount0 == 0 ? token0 : token1;
 
       IERC20 token = IERC20(_amount0 == 0 ? token1 : token0);
-      IERC20 tokenBal = IERC20(_amoun0 == 0 ? token0 : token1); // token exchanged at Balancer
+      IERC20 tokenBal = IERC20(_amount0 == 0 ? token0 : token1); // token exchanged at Balancer
       
       token.approve(address(uniRouter), amountToken);
 
       // no need for require() check, if amount required is not sent uniRouter will revert
       uint amountRequiredUni = UniswapV2Library.getAmountsIn(uniFactory, amountToken, path)[0];
-      uint amountReceivedUni = uniRouter.swapExactTokensForTokens(amountToken, amountRequired, path, msg.sender, deadline)[1]; //uniSwap swap
-
-      uint minAmountOut = BMath.calcOutGivenIn(BPool.getBalance(path[1]), BPool.getNormalizedWeight(path[1]), BPool.getBalance(path[0]), BPool.getNormalizedWeight(path[0]), amountReceivedUni, BPool.getSwapFee());
+      uint amountReceivedUni = uniRouter.swapExactTokensForTokens(amountToken, amountRequiredUni, path, msg.sender, deadline)[1]; //uniSwap swap
+      
+      /* balPool is not the contract here, we must import from BMath.sol */
+      uint minAmountOut = balPool.calcOutGivenIn(balPool.getBalance(path[1]), balPool.getNormalizedWeight(path[1]), balPool.getBalance(path[0]), balPool.getNormalizedWeight(path[0]), amountReceivedUni, balPool.getSwapFee());
       uint maxPrice = amountReceivedUni / minAmountOut;
 
       // check if the Balancer swap on the pool is allowed
@@ -48,10 +50,10 @@ contract FlashLoaner {
         tokenBal.approve(balPool, amountReceivedUni);
       }
 
-      uint[] amountReceivedBal = BPool.swapExactAmountIn(path[1], amountReceivedUni, path[0], minAmountOut, maxPrice);
+      uint amountReceivedBal = balPool.swapExactAmountIn(path[1], amountReceivedUni, path[0], minAmountOut, maxPrice)[0];
 
       // YEAHH PROFIT
-      token.transfer(_sender, amountReceivedBal[0] - amountRequired);
+      token.transfer(_sender, amountReceivedBal - amountRequiredUni);
     
   }
 }
