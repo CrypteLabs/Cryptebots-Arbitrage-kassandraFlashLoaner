@@ -1,5 +1,5 @@
 // make sure to test your own strategies, do not use this version in production
-//require('dotenv').config();
+require('dotenv').config();
 
 const privateKey = process.env.PRIVATE_KEY;
 // your contract address
@@ -13,7 +13,7 @@ const UniswapV2Factory = require('./abis/IUniswapV2Factory.json');
 const BPool = require('./abis/BPool.json')
 
 // use your own Infura node in production
-const provider = new ethers.providers.InfuraProvider('mainnet', process.env.INFURA_KEY);
+const provider = new ethers.providers.InfuraProvider('ropsten', process.env.INFURA_KEY);
 
 const wallet = new ethers.Wallet(privateKey, provider);
 
@@ -74,7 +74,7 @@ const runBot = async () => {
       const process = spawn('python', ['./opt-loan.py', reserve0Balancer, reserve1Balancer, reserve0Uni, reserve1Uni, weight0Balancer, weight1Balancer]);
       await process.stdout.on('data', data => {
         console.log(data);
-        optTrade = float(data);
+        optTrade = parseFloat(data);
       });
       /* here we can call another optimal trade calculation adjusting the weights before trading */
 
@@ -108,20 +108,20 @@ const runBot = async () => {
 
       if (!shouldTrade) return;
 
-      //const gasLimit = await uniswapToken0Token1.estimateGas.swap( /* estimateGas comes from js */
-      //  !shouldStartToken0 ? token1_Trade : 0,
-      //  shouldStartToken0 ? token0_Trade : 0,
-      //  flashLoanerAddress,
-      //  ethers.utils.toUtf8Bytes('1'),
-      //);
+      const gasLimit = await uniswapToken0Token1.estimateGas.swap( /* estimateGas comes from js */
+        !shouldStartToken0 ? token1_Trade : 0,
+        shouldStartToken0 ? token0_Trade : 0,
+        flashLoanerAddress,
+        ethers.utils.toUtf8Bytes('1'),
+      );
 
-      //const gasPrice = await wallet.getGasPrice();
+      const gasPrice = await wallet.getGasPrice();
 
-      //const gasCost = Number(ethers.utils.formatEther(gasPrice.mul(gasLimit)));
+      const gasCost = Number(ethers.utils.formatEther(gasPrice.mul(gasLimit)));
 
-      const gasLimit = 1e6;
-      const gasPrice = 1e6;
-      const gasCost = 1e6;
+      //const gasLimit = 1e6;
+      //const gasPrice = 1e6;
+      //const gasCost = 1e6;
 
       const shouldSendTx = shouldStartToken0
         ? (gasCost / token0_Trade) < spread
