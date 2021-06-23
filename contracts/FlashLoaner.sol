@@ -4,6 +4,7 @@ import './UniswapV2Library.sol';
 import './interfaces/IUniswapV2Router02.sol';
 import './interfaces/IUniswapV2Pair.sol';
 import './interfaces/IERC20.sol';
+import './interfaces/IBPool.sol';
 /* need to import BMath from Balancer to use some functions, how is it done? */
 // when adding the contract to mainnet how this contract access the other contract functions like BPool.sol, BMath.sol
 
